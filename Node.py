@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from collections import Counter
-
+from sklearn.linear_model import LogisticRegression
 
 
 class Node:
@@ -22,19 +22,18 @@ class Node:
         self.left = None
         self.right = None
         #Gini impurity value
-        self.gini = self.gini_impurity(self.y_counts[0], self.y_counts[1])
-
+        self.gini = self.gini_impurity(self.y_counts.get(0, 0), self.y_counts.get(1, 0))
+        #split criteria and the feature chosen for the split
         self.split_criteria = 0
         self.best_feature = None
 
+        #logistice reg model for leaves
+        self.model = None
+        self.isLeaf = False
 
-        pass
+
 
     def grow_tree(self):
-
-        #if all samples are of only 1 class we build a leaf
-        # if self.gini == 0:
-
 
         if (self.samples_count > self.min_leaf) and (self.depth < self.max_depth) and (self.gini != 0):
             best_feature = None
@@ -59,6 +58,12 @@ class Node:
             left_x.reset_index(drop=True, inplace=True)
             right_x.reset_index(drop=True, inplace=True)
 
+            #if one of split sample size is less then min leaf build a leaf
+            if len(left_y) <= self.min_leaf or len(right_y) <= self.min_leaf:
+                self.model = LogisticRegression()
+                self.model.fit(self.x, self.y)
+                return
+            #build left node
             left_node = Node(
                 x=left_x,
                 y=left_y,
@@ -67,8 +72,8 @@ class Node:
                 min_leaf=self.min_leaf,
             )
             self.left = left_node
-            self.left.grow_tree()
-
+            self.left.grow_tree() #grow tree from left
+            #build right node
             right_node = Node(
                 x=right_x,
                 y=right_y,
@@ -77,7 +82,7 @@ class Node:
                 min_leaf=self.min_leaf,
             )
             self.right = right_node
-            self.right.grow_tree()
+            self.right.grow_tree() #grow tree from right
 
 
     def find_best_split(self, var_idx):
@@ -128,19 +133,32 @@ class Node:
 
 
     def is_leaf(self):
-        pass
+        return self.left is None and self.right is None
 
     def predict(self, x):
-        pass
+        predictions = []
+        for index, row in x.iterrows():
+            predictions.append(self.predict_row(row))
+        return predictions
 
     def predict_row(self, xi):
-        pass
+        while not self.is_leaf():
+            if xi[self.best_feature] < self.split_criteria:
+                self.left.predict_row(xi)
+            else:
+                self.right.predict_row(xi)
+
+        if self.model is not None:
+            return self.model.predict(xi)
+
+        else:
+            return self.y[0]
 
 
     @staticmethod
     def gini_impurity(y1_count, y2_count):
         total = y1_count + y2_count
-        if total == 0: #if there is no smaples
+        if total == 0: #if there is no samples
             return 0
         else: #calculate p for each class
             p1 = y1_count / total
@@ -148,6 +166,15 @@ class Node:
         return 1 - (p1**2 + p2**2)
 
 
+    def print_tree(self):
+
+        print(f'node rule: {self.split_criteria} node f: {self.best_feature} y count: {Counter(self.y)} isLeaf: {self.isLeaf}')
+
+        if self.left is not None:
+            self.left.print_tree()
+
+        if self.right is not None:
+            self.right.print_tree()
 
 
 

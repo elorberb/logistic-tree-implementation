@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 from Node import Node
+from collections import Counter
 
 
 def analyze_data(data):
@@ -98,8 +99,18 @@ if __name__ == "__main__":
     # print(v)
     #
     # print(len(left_indexes) + len(right_indexes))
-
+    #
     n.grow_tree()
+
+    n.print_tree()
+    # preds = n.predict(x)
+    #
+    # print(preds[:20])
+    # print(Counter(preds))
+    # print(Counter(y))
+
+
+
 
 
 
