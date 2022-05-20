@@ -32,7 +32,11 @@ class Node:
 
     def grow_tree(self):
 
-        if (self.samples_count > self.min_leaf) and (self.depth < self.max_depth):
+        #if all samples are of only 1 class we build a leaf
+        # if self.gini == 0:
+
+
+        if (self.samples_count > self.min_leaf) and (self.depth < self.max_depth) and (self.gini != 0):
             best_feature = None
             best_split = 0
             best_gain = 0
@@ -52,6 +56,9 @@ class Node:
             left_y = [self.y[i] for i in left_x.index.values]
             right_y = [self.y[i] for i in right_x.index.values]
 
+            left_x.reset_index(drop=True, inplace=True)
+            right_x.reset_index(drop=True, inplace=True)
+
             left_node = Node(
                 x=left_x,
                 y=left_y,
@@ -60,7 +67,7 @@ class Node:
                 min_leaf=self.min_leaf,
             )
             self.left = left_node
-            left_node.grow_tree()
+            self.left.grow_tree()
 
             right_node = Node(
                 x=right_x,
@@ -70,7 +77,7 @@ class Node:
                 min_leaf=self.min_leaf,
             )
             self.right = right_node
-            right_node.grow_tree()
+            self.right.grow_tree()
 
 
     def find_best_split(self, var_idx):
@@ -106,20 +113,18 @@ class Node:
         p_right = len(rhs) / total_len
 
         #get y values for left and right
-        lhs2 = lhs
-        rhs2 = rhs
-        print(len(self.y))
         y_left = [self.y[i] for i in lhs]
         y_right = [self.y[i] for i in rhs]
 
         #calculate gini impurity for each y list
         y_left_counts = Counter(y_left)
         y_right_counts = Counter(y_right)
-        gini_left = self.gini_impurity(y_left_counts[0], y_left_counts[1])
-        gini_right = self.gini_impurity(y_right_counts[0], y_right_counts[1])
+        gini_left = self.gini_impurity(y_left_counts.get(0, 0), y_left_counts.get(1, 0))
+        gini_right = self.gini_impurity(y_right_counts.get(0, 0), y_right_counts.get(1, 0))
 
         #return gini gain
-        return self.gini - (p_left * gini_left + p_right * gini_right)
+        gini_gain = self.gini - (p_left * gini_left + p_right * gini_right)
+        return gini_gain
 
 
     def is_leaf(self):
