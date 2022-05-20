@@ -29,13 +29,28 @@ class Node:
 
         #logistice reg model for leaves
         self.model = None
-        self.isLeaf = False
+        self.prediction = None #define predictions for a node if all values are of only one class
 
 
 
     def grow_tree(self):
 
-        if (self.samples_count > self.min_leaf) and (self.depth < self.max_depth) and (self.gini != 0):
+        if self.samples_count < 2 * self.min_leaf:
+            if len(set(self.y)) == 1:
+                self.prediction = self.y[0]
+            else:
+                self.model = LogisticRegression()
+                self.model.fit(self.x.values, self.y)
+            return
+            #
+            # try:
+            #     self.model = LogisticRegression()
+            #     self.model.fit(self.x, self.y)
+            # except:
+            #     self.prediction = max(set(self.y), key=self.y.count)
+            #
+
+        elif (self.samples_count > self.min_leaf) and (self.depth < self.max_depth) and (self.gini != 0):
             best_feature = None
             best_split = 0
             best_gain = 0
@@ -58,11 +73,6 @@ class Node:
             left_x.reset_index(drop=True, inplace=True)
             right_x.reset_index(drop=True, inplace=True)
 
-            #if one of split sample size is less then min leaf build a leaf
-            if len(left_y) <= self.min_leaf or len(right_y) <= self.min_leaf:
-                self.model = LogisticRegression()
-                self.model.fit(self.x, self.y)
-                return
             #build left node
             left_node = Node(
                 x=left_x,
@@ -100,8 +110,13 @@ class Node:
         avg_values = get_values_between(sorted_values)
 
         for v in avg_values:
+            #get indexes for split
             left_indexes = self.x[self.x[var_idx] < v].index.values
             right_indexes = self.x[self.x[var_idx] >= v].index.values
+
+            # current split is less then min leaf
+            if len(left_indexes) < self.min_leaf or len(right_indexes) < self.min_leaf:
+                continue
 
             curr_gini_gain = self.get_gini_gain(left_indexes, right_indexes)
             if curr_gini_gain > max_gini_gain:
@@ -142,21 +157,24 @@ class Node:
         return predictions
 
     def predict_row(self, xi):
-        while not self.is_leaf():
+        if not self.is_leaf():
             if xi[self.best_feature] < self.split_criteria:
                 self.left.predict_row(xi)
             else:
                 self.right.predict_row(xi)
 
-        if self.model is not None:
-            return self.model.predict(xi)
-
+        if self.model is None:
+            return self.prediction
         else:
-            return self.y[0]
+            return self.model.predict(xi.to_numpy().reshape(1, -1))
 
 
     @staticmethod
     def gini_impurity(y1_count, y2_count):
+        if y1_count is None:
+            y1_count = 0
+        if y2_count is None:
+            y2_count = 0
         total = y1_count + y2_count
         if total == 0: #if there is no samples
             return 0
@@ -168,7 +186,7 @@ class Node:
 
     def print_tree(self):
 
-        print(f'node rule: {self.split_criteria} node f: {self.best_feature} y count: {Counter(self.y)} isLeaf: {self.isLeaf}')
+        print(f'node rule: {self.split_criteria} node f: {self.best_feature} y count: {Counter(self.y)} ')
 
         if self.left is not None:
             self.left.print_tree()

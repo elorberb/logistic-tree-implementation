@@ -5,6 +5,8 @@ import numpy as np
 import seaborn as sns
 from Node import Node
 from collections import Counter
+from sklearn import tree
+
 
 
 def analyze_data(data):
@@ -73,7 +75,9 @@ if __name__ == "__main__":
     x, y = preprocess(data)
     # X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=11)
     #
-    n = Node(x, y)
+    # x_train = x.head(11)
+    # y_train = y[:11]
+    # n = Node(x_train, y_train)
     # print(len(n.y))
 
     # index1 = list(range(140))
@@ -100,14 +104,43 @@ if __name__ == "__main__":
     #
     # print(len(left_indexes) + len(right_indexes))
     #
-    n.grow_tree()
+    # n.grow_tree()
 
-    n.print_tree()
+    # n.print_tree()
     # preds = n.predict(x)
     #
     # print(preds[:20])
     # print(Counter(preds))
     # print(Counter(y))
+
+    # var1 = [0,0,0,0,1,1,1,0,1,0]
+    # var2 = [33,54,56,42,50,55,31,-4,77,49]
+    # y_test = [0,0,0,0,0,1,1,1,1,1]
+    #
+    # data = {
+    #     "var1": var1,
+    #     "var2": var2
+    # }
+    #
+    # x_test = pd.DataFrame(data = data)
+    # dt = tree.DecisionTreeClassifier(max_depth=5, min_samples_leaf=5)
+    # dt.fit(x, y)
+
+    n = Node(x, y)
+    n.grow_tree()
+    # n.print_tree()
+
+    # plt.figure(figsize=(15, 15))
+    # tree.plot_tree(dt, fontsize=7)
+    # plt.show()
+
+    preds = n.predict(x.head(10))
+    print(preds)
+    print(Counter(preds))
+
+
+
+
 
 
 
