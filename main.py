@@ -6,6 +6,8 @@ import seaborn as sns
 from Node import Node
 from collections import Counter
 from sklearn import tree
+from sklearn.metrics import accuracy_score
+
 
 
 
@@ -129,14 +131,16 @@ if __name__ == "__main__":
     n = Node(x, y)
     n.grow_tree()
     # n.print_tree()
-
+    #
     # plt.figure(figsize=(15, 15))
-    # tree.plot_tree(dt, fontsize=7)
+    # tree.plot_tree(dt, fontsize=4)
     # plt.show()
 
-    preds = n.predict(x.head(10))
-    print(preds)
+    preds = n.predict(x)
     print(Counter(preds))
+    print(Counter(y))
+
+    print(accuracy_score(y, preds))
 
 
 

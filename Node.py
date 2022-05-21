@@ -35,20 +35,13 @@ class Node:
 
     def grow_tree(self):
 
-        if self.samples_count < 2 * self.min_leaf:
+        if self.samples_count < 2 * self.min_leaf or len(set(self.y)) == 1 or self.depth == self.max_depth - 1:
             if len(set(self.y)) == 1:
                 self.prediction = self.y[0]
             else:
                 self.model = LogisticRegression()
                 self.model.fit(self.x.values, self.y)
             return
-            #
-            # try:
-            #     self.model = LogisticRegression()
-            #     self.model.fit(self.x, self.y)
-            # except:
-            #     self.prediction = max(set(self.y), key=self.y.count)
-            #
 
         elif (self.samples_count > self.min_leaf) and (self.depth < self.max_depth) and (self.gini != 0):
             best_feature = None
@@ -153,20 +146,22 @@ class Node:
     def predict(self, x):
         predictions = []
         for index, row in x.iterrows():
-            predictions.append(self.predict_row(row))
+            curr_pred = self.predict_row(row)
+            predictions.append(curr_pred)
         return predictions
 
     def predict_row(self, xi):
         if not self.is_leaf():
             if xi[self.best_feature] < self.split_criteria:
-                self.left.predict_row(xi)
+                return self.left.predict_row(xi)
             else:
-                self.right.predict_row(xi)
+                return self.right.predict_row(xi)
 
-        if self.model is None:
+        elif self.model is None:
             return self.prediction
         else:
-            return self.model.predict(xi.to_numpy().reshape(1, -1))
+            pred = self.model.predict(xi.to_numpy().reshape(1, -1))
+            return pred[0]
 
 
     @staticmethod
