@@ -6,7 +6,7 @@ from sklearn.linear_model import LogisticRegression
 
 class Node:
 
-    def __init__(self, x, y, min_leaf=5, max_depth=5, depth=0):
+    def __init__(self, x, y, min_leaf, class_weight=None, max_depth=5, depth=0):
         self.x = x
         self.y = y
         self.min_leaf = min_leaf
@@ -47,7 +47,7 @@ class Node:
             best_feature = None
             best_split = 0
             best_gain = 0
-            for f in self.features:
+            for f in self.features:#find best split of all features
                 curr_gini_gain, split_value = self.find_best_split(f)
                 if curr_gini_gain > best_gain:
                     best_feature = f
@@ -63,7 +63,7 @@ class Node:
             left_y = [self.y[i] for i in left_x.index.values]
             right_y = [self.y[i] for i in right_x.index.values]
 
-            left_x.reset_index(drop=True, inplace=True)
+            left_x.reset_index(drop=True, inplace=True) #fix index forwarding
             right_x.reset_index(drop=True, inplace=True)
 
             #build left node
@@ -179,7 +179,7 @@ class Node:
         return 1 - (p1**2 + p2**2)
 
 
-    def print_tree(self):
+    def print_tree(self): #helper function for tests
 
         print(f'node rule: {self.split_criteria} node f: {self.best_feature} y count: {Counter(self.y)} ')
 

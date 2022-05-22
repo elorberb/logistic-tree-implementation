@@ -1,14 +1,12 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import matplotlib.pyplot as plt
-import numpy as np
 import seaborn as sns
 from Node import Node
+from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_auc_score
+from LogisticModelTree import LogisticModelTree
 from collections import Counter
-from sklearn import tree
-from sklearn.metrics import accuracy_score
-
-
 
 
 def analyze_data(data):
@@ -46,11 +44,18 @@ def analyze_data(data):
 
 
 def preprocess(data):
-    #fill na with mean values
-    data2 = data.fillna(data.mean())
+    #fill NA with mean values
+    num_f = ['oldpeak', 'age', 'trestbps', 'chol', 'fbs', 'thalach']
+    cat_f = ['thal', 'sex', 'restecg', 'exang', 'slope', 'ca']
+
+    for c_f in cat_f:
+        data[c_f].fillna(data[c_f].mode()[0], inplace=True)
+
+    for n_f in num_f:
+        data[n_f].fillna(data[n_f].mean(), inplace=True)
 
     #Perform Min Max Scaler
-    data_min_max_scaled = data2.copy()
+    data_min_max_scaled = data.copy()
     for column in data_min_max_scaled.columns:
         data_min_max_scaled[column] = (data_min_max_scaled[column] - data_min_max_scaled[column].min()) / (
                     data_min_max_scaled[column].max() - data_min_max_scaled[column].min())
@@ -63,8 +68,14 @@ def preprocess(data):
 
 
 def show_roc_curve(y_true, preds):
-    pass
-
+    auc = roc_auc_score(y_true, preds)
+    print(' AUC score =%.3f' % (auc))
+    ns_fpr, ns_tpr, _ = roc_curve(y_true, preds)
+    plt.plot(ns_fpr, ns_tpr, marker='.')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic')
+    plt.show()
 
 # bonus
 def calculate_class_weights(y):
@@ -72,75 +83,48 @@ def calculate_class_weights(y):
 
 
 if __name__ == "__main__":
+    ########################################### - plotting 3 ROC curves with diffrent parameters in the same plot
     data = pd.read_csv('heart.csv')
     # analyze_data(data)
     x, y = preprocess(data)
-    # X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.20, random_state=11)
-    #
-    # x_train = x.head(11)
-    # y_train = y[:11]
-    # n = Node(x_train, y_train)
-    # print(len(n.y))
+    trainX, testX, trainy, testy = train_test_split(x, y, test_size=0.5, random_state=12)
+    ns_probs = [0 for _ in range(len(testy))]
+    n1 = Node(x, y, min_leaf=3, max_depth=3)
+    n2 = Node(x, y, min_leaf=5, max_depth=5)
+    n3 = Node(x, y, min_leaf=8, max_depth=8)
+    n1.grow_tree()
+    n2.grow_tree()
+    n3.grow_tree()
 
-    # index1 = list(range(140))
-    # index2 = list(range(140,303))
-    # print(n.gini)
-    # print(index1[-1],index2[0],index2[-1])
-    # print(n.get_gini_gain(index1,index2))
+    lr_probs = n1.predict(testX)
+    lr_probs1 = n2.predict(testX)
+    lr_probs2 = n3.predict(testX)
 
-    # sorted_x = np.sort(x['age'].unique())
-    # avg_values = []
-    # for i in range(len(sorted_x) - 1):
-    #     avg_values.append(np.mean([sorted_x[i], sorted_x[i + 1]]))
-    #
-    # v = avg_values[5]
-    # left_indexes = n.x[n.x['age'] < v].index.values
-    # right_indexes = n.x[n.x['age'] >= v].index.values
-    #
-    # left_values = n.x[n.x['age'] < v]['age']
-    # right_values = n.x[n.x['age'] >= v]['age']
-    #
-    # print(max(left_values))
-    # print(min(right_values))
-    # print(v)
-    #
-    # print(len(left_indexes) + len(right_indexes))
-    #
-    # n.grow_tree()
+    ns_auc = roc_auc_score(testy, ns_probs)
+    lr_auc = roc_auc_score(testy, lr_probs)
+    lr_auc1 = roc_auc_score(testy, lr_probs1)
+    lr_auc2 = roc_auc_score(testy, lr_probs2)
+    print('No Skill: ROC AUC=%.3f' % (ns_auc))
+    print('Logistic regression with min_leaf=3, max_depth=3: ROC AUC=%.3f' % (lr_auc))
+    print('Logistic regression with min_leaf=5, max_depth=5: ROC AUC=%.3f' % (lr_auc1))
+    print('Logistic regression with min_leaf=8, max_depth=8: ROC AUC=%.3f' % (lr_auc2))
+    ns_fpr, ns_tpr, _ = roc_curve(testy, ns_probs)
+    plr_fpr, lr_tpr, _ = roc_curve(testy, lr_probs)
+    plr_fpr1, lr_tpr1, _ = roc_curve(testy, lr_probs1)
+    plr_fpr2, lr_tpr2, _ = roc_curve(testy, lr_probs2)
+    # plt.plot(ns_fpr, ns_tpr, linestyle='--', label='No Skill')
+    plt.plot(plr_fpr, lr_tpr, marker='.', label='ROC- min_leaf=3, max_depth=3 (area = 0.874)')
+    plt.plot(plr_fpr1, lr_tpr1, marker='.', label='ROC- min_leaf=5, max_depth=5 (area = 0.94)')
+    plt.plot(plr_fpr2, lr_tpr2, marker='.', label='ROC- min_leaf=8, max_depth=8 (area = 0.928)')
+    plt.title('Receiver operating characteristic')
+    # axis labels
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    # show the legend
+    plt.legend()
+    # show the plot
+    plt.show()
 
-    # n.print_tree()
-    # preds = n.predict(x)
-    #
-    # print(preds[:20])
-    # print(Counter(preds))
-    # print(Counter(y))
-
-    # var1 = [0,0,0,0,1,1,1,0,1,0]
-    # var2 = [33,54,56,42,50,55,31,-4,77,49]
-    # y_test = [0,0,0,0,0,1,1,1,1,1]
-    #
-    # data = {
-    #     "var1": var1,
-    #     "var2": var2
-    # }
-    #
-    # x_test = pd.DataFrame(data = data)
-    # dt = tree.DecisionTreeClassifier(max_depth=5, min_samples_leaf=5)
-    # dt.fit(x, y)
-
-    n = Node(x, y)
-    n.grow_tree()
-    # n.print_tree()
-    #
-    # plt.figure(figsize=(15, 15))
-    # tree.plot_tree(dt, fontsize=4)
-    # plt.show()
-
-    preds = n.predict(x)
-    print(Counter(preds))
-    print(Counter(y))
-
-    print(accuracy_score(y, preds))
 
 
 
