@@ -12,6 +12,7 @@ class Node:
         self.min_leaf = min_leaf
         self.max_depth = max_depth
         self.depth = depth
+        self.class_wight = class_weight
         #count for each class in node
         self.y_counts = Counter(y)
         #Count of rows

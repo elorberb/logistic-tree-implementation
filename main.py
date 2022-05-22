@@ -79,7 +79,13 @@ def show_roc_curve(y_true, preds):
 
 # bonus
 def calculate_class_weights(y):
-    pass
+    negative_0, negative_1 = sum(y), len(y) - sum(y)
+    positive_0, positive_1 = negative_1, negative_0
+    weights = {
+        0: negative_0 / positive_0,
+        1: negative_1 / positive_1
+    }
+    return weights
 
 
 if __name__ == "__main__":
